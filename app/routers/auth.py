@@ -1,3 +1,4 @@
+from app.models.client import Client
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -27,6 +28,16 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    if new_user.type == "client":
+        matching_client = db.query(Client).filter(
+            Client.email == new_user.email,
+            Client.user_id.is_(None),
+        ).first()
+
+        if matching_client:
+            matching_client.user_id = new_user.id
+            db.commit()
 
     return new_user
 

@@ -1,3 +1,4 @@
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
@@ -33,3 +34,24 @@ def list_clients(
     current_user: User = Depends(get_current_user),
 ):
     return db.query(Client).filter(Client.freelance_id == current_user.id).all()
+
+
+
+@router.get("/{client_id}", response_model=ClientOut)
+def get_client(
+    client_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    client = db.query(Client).filter(
+        Client.id == client_id,
+        Client.freelance_id == current_user.id,
+    ).first()
+
+    if not client:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Client introuvable",
+        )
+
+    return client    
