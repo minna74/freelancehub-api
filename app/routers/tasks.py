@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import require_freelance
-from app.core.security import get_current_user
+from app.core.security import require_freelance, get_current_user
+from app.core.permissions import get_client_ids_for_user
 from app.models.project import Project
 from app.models.task import Task
 from app.models.user import User
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 def create_task(
     task_in: TaskCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_freelance),
 ):
     project = db.query(Project).filter(
         Project.id == task_in.project_id,
@@ -44,11 +44,18 @@ def create_task(
 @router.get("/", response_model=list[TaskOut])
 def list_tasks(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_freelance),
+    current_user: User = Depends(get_current_user),
 ):
-    return (
-        db.query(Task)
-        .join(Project)
-        .filter(Project.freelance_id == current_user.id)
-        .all()
-    )   
+    if current_user.type == "freelance":
+        return (
+            db.query(Task)
+            .join(Project)
+            .filter(Project.freelance_id == current_user.id)
+            .all()
+        )
+
+    client_ids = get_client_ids_for_user(db, current_user.id)
+    project_ids = [
+        p.id for p in db.query(Project).filter(Project.client_id.in_(client_ids)).all()
+    ]
+    return db.query(Task).filter(Task.project_id.in_(project_ids)).all()

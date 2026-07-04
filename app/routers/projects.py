@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import require_freelance
-from app.core.security import get_current_user
+from app.core.security import require_freelance, get_current_user
+from app.core.permissions import get_client_ids_for_user
 from app.models.client import Client
 from app.models.project import Project
 from app.models.user import User
@@ -45,4 +45,8 @@ def list_projects(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return db.query(Project).filter(Project.freelance_id == current_user.id).all()
+    if current_user.type == "freelance":
+        return db.query(Project).filter(Project.freelance_id == current_user.id).all()
+
+    client_ids = get_client_ids_for_user(db, current_user.id)
+    return db.query(Project).filter(Project.client_id.in_(client_ids)).all()
