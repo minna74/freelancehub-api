@@ -59,4 +59,12 @@ def get_current_user(
     if user is None:
         raise credentials_exception
 
-    return user        
+    return user 
+
+def require_freelance(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.type != "freelance":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Reserve aux freelances",
+        )
+    return current_user           

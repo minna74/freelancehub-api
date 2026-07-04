@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import require_freelance
 from app.core.security import get_current_user
 from app.models.client import Client
 from app.models.project import Project
@@ -15,7 +16,7 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 def create_project(
     project_in: ProjectCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_freelance),
 ):
     client = db.query(Client).filter(
         Client.id == project_in.client_id,

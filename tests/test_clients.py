@@ -106,4 +106,25 @@ def test_client_auto_attachment_on_register(client):
     matching = [c for c in clients if c["email"] == "futurclient@example.com"]
 
     assert len(matching) == 1
-    assert matching[0]["user_id"] is not None    
+    assert matching[0]["user_id"] is not None 
+
+def test_create_client_forbidden_for_client_type(client):
+    client.post("/auth/register", json={
+        "email": "clientuser@example.com",
+        "password": "password123",
+        "nom": "Client User",
+        "type": "client",
+    })
+    login_response = client.post("/auth/login", json={
+        "email": "clientuser@example.com",
+        "password": "password123",
+    })
+    token = login_response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = client.post("/clients/", json={
+        "nom": "Tentative",
+        "email": "tentative@example.com",
+    }, headers=headers)
+
+    assert response.status_code == 403       

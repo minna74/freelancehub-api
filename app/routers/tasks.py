@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import require_freelance
 from app.core.security import get_current_user
 from app.models.project import Project
 from app.models.task import Task
@@ -43,11 +44,11 @@ def create_task(
 @router.get("/", response_model=list[TaskOut])
 def list_tasks(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_freelance),
 ):
     return (
         db.query(Task)
         .join(Project)
         .filter(Project.freelance_id == current_user.id)
         .all()
-    )
+    )   
