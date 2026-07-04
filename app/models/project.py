@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
@@ -14,4 +15,4 @@ class Project(Base):
     statut = Column(String, nullable=False, default="actif")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    
+    tasks = relationship("Task", cascade="all, delete-orphan")

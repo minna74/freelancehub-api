@@ -202,3 +202,26 @@ def test_delete_project_success(client):
     assert get_response.status_code == 404
 
     
+def test_delete_project_cascades_to_tasks(client):
+    headers = register_and_login(client, "freelance35@example.com")
+    client_response = client.post("/clients/", json={
+        "nom": "Client Cascade",
+        "email": "clientcascade@example.com",
+    }, headers=headers)
+    project_response = client.post("/projects/", json={
+        "nom": "Projet Cascade",
+        "client_id": client_response.json()["id"],
+    }, headers=headers)
+    project_id = project_response.json()["id"]
+
+    task_response = client.post("/tasks/", json={
+        "titre": "Tache Cascade",
+        "project_id": project_id,
+    }, headers=headers)
+    task_id = task_response.json()["id"]
+
+    client.delete(f"/projects/{project_id}", headers=headers)
+
+    get_task_response = client.get(f"/tasks/{task_id}", headers=headers)
+    assert get_task_response.status_code == 404
+    
