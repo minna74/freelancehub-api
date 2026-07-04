@@ -102,4 +102,103 @@ def test_client_sees_only_own_projects(client):
     data = response.json()
     assert len(data) == 1
     assert data[0]["nom"] == "Projet Visible"
+
+def test_get_project_by_id_success(client):
+    headers = register_and_login(client, "freelance20@example.com")
+    client_response = client.post("/clients/", json={
+        "nom": "Client Detail Project",
+        "email": "detailproject@example.com",
+    }, headers=headers)
+    project_response = client.post("/projects/", json={
+        "nom": "Projet Detail",
+        "client_id": client_response.json()["id"],
+    }, headers=headers)
+    project_id = project_response.json()["id"]
+
+    response = client.get(f"/projects/{project_id}", headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["nom"] == "Projet Detail"
+
+
+def test_get_project_by_id_isolation(client):
+    headers_1 = register_and_login(client, "freelance21@example.com")
+    headers_2 = register_and_login(client, "freelance22@example.com")
+    client_response = client.post("/clients/", json={
+        "nom": "Client Prive Project",
+        "email": "priveproject@example.com",
+    }, headers=headers_1)
+    project_response = client.post("/projects/", json={
+        "nom": "Projet Prive",
+        "client_id": client_response.json()["id"],
+    }, headers=headers_1)
+    project_id = project_response.json()["id"]
+
+    response = client.get(f"/projects/{project_id}", headers=headers_2)
+
+    assert response.status_code == 404
+
+
+def test_update_project_success(client):
+    headers = register_and_login(client, "freelance23@example.com")
+    client_response = client.post("/clients/", json={
+        "nom": "Client Update",
+        "email": "clientupdate@example.com",
+    }, headers=headers)
+    client_id = client_response.json()["id"]
+    project_response = client.post("/projects/", json={
+        "nom": "Nom Original",
+        "client_id": client_id,
+    }, headers=headers)
+    project_id = project_response.json()["id"]
+
+    response = client.patch(f"/projects/{project_id}", json={
+        "nom": "Nom Modifie",
+        "client_id": client_id,
+    }, headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["nom"] == "Nom Modifie"
+
+
+def test_update_project_forbidden_for_other_freelance(client):
+    headers_1 = register_and_login(client, "freelance24@example.com")
+    headers_2 = register_and_login(client, "freelance25@example.com")
+    client_response = client.post("/clients/", json={
+        "nom": "Client X",
+        "email": "clientx@example.com",
+    }, headers=headers_1)
+    client_id = client_response.json()["id"]
+    project_response = client.post("/projects/", json={
+        "nom": "Projet X",
+        "client_id": client_id,
+    }, headers=headers_1)
+    project_id = project_response.json()["id"]
+
+    response = client.patch(f"/projects/{project_id}", json={
+        "nom": "Tentative Modif",
+        "client_id": client_id,
+    }, headers=headers_2)
+
+    assert response.status_code == 404
+
+
+def test_delete_project_success(client):
+    headers = register_and_login(client, "freelance26@example.com")
+    client_response = client.post("/clients/", json={
+        "nom": "Client Delete",
+        "email": "clientdelete@example.com",
+    }, headers=headers)
+    project_response = client.post("/projects/", json={
+        "nom": "Projet A Supprimer",
+        "client_id": client_response.json()["id"],
+    }, headers=headers)
+    project_id = project_response.json()["id"]
+
+    delete_response = client.delete(f"/projects/{project_id}", headers=headers)
+    assert delete_response.status_code == 204
+
+    get_response = client.get(f"/projects/{project_id}", headers=headers)
+    assert get_response.status_code == 404
+
     
