@@ -13,3 +13,5 @@ class Project(Base):
     freelance_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     statut = Column(String, nullable=False, default="actif")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    

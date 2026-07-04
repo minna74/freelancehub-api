@@ -70,3 +70,36 @@ def test_list_projects_isolation(client):
 
     assert response.status_code == 200
     assert response.json() == []
+
+def test_client_sees_only_own_projects(client):
+    freelance_headers = register_and_login(client, "freelance19@example.com")
+
+    client_response = client.post("/clients/", json={
+        "nom": "Client Lecture Seule",
+        "email": "lectureseule@example.com",
+    }, headers=freelance_headers)
+
+    client.post("/projects/", json={
+        "nom": "Projet Visible",
+        "client_id": client_response.json()["id"],
+    }, headers=freelance_headers)
+
+    client.post("/auth/register", json={
+        "email": "lectureseule@example.com",
+        "password": "password123",
+        "nom": "Client User",
+        "type": "client",
+    })
+    login_response = client.post("/auth/login", json={
+        "email": "lectureseule@example.com",
+        "password": "password123",
+    })
+    client_headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
+
+    response = client.get("/projects/", headers=client_headers)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["nom"] == "Projet Visible"
+    
