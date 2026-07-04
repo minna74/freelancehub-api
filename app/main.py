@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from app.routers import auth, clients, projects
+from app.routers import auth, clients, projects, tasks
 
 app = FastAPI(
     title="FreelanceHub API",
@@ -11,6 +11,7 @@ app = FastAPI(
 app.include_router(auth.router)
 app.include_router(clients.router)
 app.include_router(projects.router)
+app.include_router(tasks.router)
 
 @app.get("/health", tags=["system"])
 def health_check():
