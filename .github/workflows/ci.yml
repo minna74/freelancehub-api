@@ -7,7 +7,7 @@ on:
 
 jobs:
   test:    
-    runs-on: ubuntu_latest
+    runs-on: ubuntu-latest
 
     env:
       DB_URL: postgresql://freelancehub:freelancehub_dev@localhost:5432/freelancehub
