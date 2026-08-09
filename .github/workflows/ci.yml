@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:    
+    runs-on: ubuntu_latest
+
+    env:
+      DB_URL: postgresql://freelancehub:freelancehub_dev@localhost:5432/freelancehub
+      SECRET_KEY: ci-test-secret-key
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: freelancehub
+          POSTGRES_PASSWORD: freelancehub_dev
+          POSTGRES_DB: freelancehub
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5s
+
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4 
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.14.5 
+
+      - name: install dependencies
+        run: pip install -r requirements.txt
+
+      - name: run database migrations
+        run: alembic upgrade head  
+      
+      - name: run tests
+        run: pytest -v  
+
+
+
+         
