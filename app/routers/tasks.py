@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import require_freelance, get_current_user
 from app.core.permissions import get_client_ids_for_user
+from app.core.security import get_current_user, require_freelance
 from app.models.project import Project
 from app.models.task import Task
 from app.models.user import User
