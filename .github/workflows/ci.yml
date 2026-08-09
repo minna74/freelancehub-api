@@ -62,8 +62,8 @@ jobs:
       - name: run database migrations
         run: alembic upgrade head  
       
-      - name: run tests
-        run: pytest -v  
+      - name: run tests with coverage
+        run: pytest  --cov=app --cov-report=term-missing --cov-fail-under=90
 
 
 
