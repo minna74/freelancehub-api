@@ -83,7 +83,7 @@ jobs:
       - name: download report
         uses: actions/download-artifact@v4
         with: 
-          name: coverage-report
+          name: coverage-report-${{matrix.python-version}}
       - name: list downloaded file
         run: ls -la
       - name: verify coverage artifact
