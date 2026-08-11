@@ -6,6 +6,30 @@ on:
       - main
 
 jobs:
+  metadata:
+    runs-on: unbuntu-latest
+
+    outputs: 
+      image-tag: ${{steps.meta.outputs.tag}}
+    steps:
+    - name: Show context
+      run: |
+        echo "Repository: ${{ github.repository }}"
+        echo "Commit: ${{ github.sha }}"
+        echo "Python: ${{ matrix.python-version }}" 
+      
+    - name: generate metadata
+      id: meta
+      run: echo"tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+  
+  show-metadata:
+    needs: metadata
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: show generated tag
+        run: echo"Generated tag:${{needs.metadata.outputs.image-tag}}"
+
   quality:
     runs-on: ubuntu-latest
 
