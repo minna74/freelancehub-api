@@ -7,20 +7,19 @@ on:
 
 jobs:
   metadata:
-    runs-on: unbuntu-latest
+    runs-on: ubuntu-latest
 
     outputs: 
-      image-tag: ${{steps.meta.outputs.tag}}
+      image-tag: ${{ steps.meta.outputs.tag }}
     steps:
     - name: Show context
       run: |
         echo "Repository: ${{ github.repository }}"
         echo "Commit: ${{ github.sha }}"
-        echo "Python: ${{ matrix.python-version }}" 
       
     - name: generate metadata
       id: meta
-      run: echo"tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      run: echo "tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
   
   show-metadata:
     needs: metadata
@@ -28,7 +27,7 @@ jobs:
     
     steps:
       - name: show generated tag
-        run: echo"Generated tag:${{needs.metadata.outputs.image-tag}}"
+        run: echo "Generated tag:${{ needs.metadata.outputs.image-tag }}"
 
   quality:
     runs-on: ubuntu-latest
@@ -81,7 +80,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{matrix.python-version}} 
+          python-version: ${{ matrix.python-version }} 
 
       - name: install dependencies
         run: pip install -r requirements.txt
@@ -95,7 +94,7 @@ jobs:
       - name: upload coverage report
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report-${{matrix.python-version}}
+          name: coverage-report-${{ matrix.python-version }}
           path: coverage.xml
           retention-days: 7
   
