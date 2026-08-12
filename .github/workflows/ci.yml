@@ -155,6 +155,7 @@ jobs:
           image-ref: '${{vars.DOCKERHUB_USERNAME}}/freelancehub-api:${{needs.metadata.outputs.image-tag}}'
           severity: 'HIGH,CRITICAL' 
           format: 'table' 
-          exit-code: '0
+          exit-code: '0'
+          
 
  
