@@ -1,0 +1,158 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+
+    outputs: 
+      image-tag: ${{ steps.meta.outputs.tag }}
+    steps:
+    - name: Show context
+      run: |
+        echo "Repository: ${{ github.repository }}"
+        echo "Commit: ${{ github.sha }}"
+      
+    - name: generate metadata
+      id: meta
+      run: echo "tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+  
+  show-metadata:
+    needs: metadata
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: show generated tag
+        run: echo "Generated tag:${{ needs.metadata.outputs.image-tag }}"
+
+  quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14.5"
+
+      - name: Install Ruff
+        run: pip install ruff
+
+      - name: Run Ruff
+        run: ruff check .
+  test:    
+    runs-on: ubuntu-latest
+    
+    env:
+      DB_URL: postgresql://freelancehub:freelancehub_dev@localhost:5432/freelancehub_test
+      SECRET_KEY: ci-test-secret-key
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: freelancehub
+          POSTGRES_PASSWORD: freelancehub_dev
+          POSTGRES_DB: freelancehub_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4 
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14.5"
+
+      - name: install dependencies
+        run: pip install -r requirements.txt
+
+      - name: run database migrations
+        run: alembic upgrade head  
+      
+      - name: run tests with coverage
+        run: pytest  --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=90
+
+      - name: upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+          retention-days: 7
+  
+  coverage-report:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: download report
+        uses: actions/download-artifact@v4
+        with: 
+         pattern: coverage-report
+         path: coverage-reports
+      - name: list downloaded file
+        run: find coverage-reports -type f
+      - name: verify coverage artifact
+        run: find coverage-reports -name "coverage.xml" -type f     
+
+
+  build-and-push:
+    needs:
+      - test
+      - quality
+      - metadata
+    runs-on:  ubuntu-latest
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+
+      - name: login to dockerhub 
+        uses: docker/login-action@v4
+        with:
+         username : ${{vars.DOCKERHUB_USERNAME}}
+         password: ${{secrets.DOCKERHUB_TOKEN}}
+
+      - name: Build Docker image
+        run: docker build -t ${{ vars.DOCKERHUB_USERNAME }}/freelancehub-api:${{ needs.metadata.outputs.image-tag }} .
+
+      - name: Push image
+        run: docker push ${{ vars.DOCKERHUB_USERNAME }}/freelancehub-api:${{ needs.metadata.outputs.image-tag }}
+  security-scan:
+    needs: 
+      - build-and-push
+      - metadata
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+   
+      - name: security scan with trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{vars.DOCKERHUB_USERNAME}}/freelancehub-api:${{needs.metadata.outputs.image-tag}}'
+          severity: 'HIGH,CRITICAL' 
+          format: 'table' 
+          exit-code: '1'
+          
+
+ 

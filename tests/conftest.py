@@ -3,8 +3,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.main import app
 from app.core.database import Base, get_db
+from app.main import app
 
 TEST_DB_URL = "postgresql://freelancehub:freelancehub_dev@localhost:5432/freelancehub_test"
 
