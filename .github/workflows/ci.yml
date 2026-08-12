@@ -114,5 +114,26 @@ jobs:
         run: find coverage-reports -name "coverage.xml" -type f     
 
 
+  build-and-push:
+    needs:
+      - test
+      - quality
+      - metadata
+    runs-on:  ubuntu-latest
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@4
 
-         
+      - name: login to dockerhub 
+        uses: docker/login-actions@v4
+        with:
+         username : ${{vars.DOCKERHUB_USERNAME}}
+         password: ${{secrets.DOCKERHUB_TOKEN}}
+
+      - name: Build Docker image
+        run: docker build -t ${{ vars.DOCKERHUB_USERNAME }}/freelancehub-api:${{ needs.metadata.outputs.image-tag }} .
+
+      - name: Push image
+        run: docker push ${{ vars.DOCKERHUB_USERNAME }}/freelancehub-api:${{ needs.metadata.outputs.image-tag }}
+   
+ 
