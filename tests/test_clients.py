@@ -52,8 +52,8 @@ def test_list_clients_returns_own_clients(client):
 
 
 def test_isolation_between_freelances(client):
-    headers_1 = register_and_login(client, "freelance3@example.com")
-    headers_2 = register_and_login(client, "freelance4@example.com")
+     register_and_login(client, "freelance3@example.com")
+     register_and_login(client, "freelance4@example.com")
 
 
 def test_get_client_by_id_success(client):
